@@ -22,6 +22,8 @@
   * 저장 : `pip freeze > requirements.txt`
   * 설치 : `pip install -r requirements.txt`
 
+~~~~~~~~
+
 ---
 
 # ⚙️ 프로젝트 진행을 위한 간단 깃(Git) 설명서
