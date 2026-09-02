@@ -29,10 +29,8 @@ inspector = inspect(engine)
 all_tables = inspector.get_table_names()
 
 if TARGET_TABLES_ENV:
-    # .env에 지정된 테이블만 필터링
     target_tables = [t.strip() for t in TARGET_TABLES_ENV.split(",") if t.strip() in all_tables]
 else:
-    # 비어있으면 DB 내 전체 테이블 대상
     target_tables = all_tables
 
 print(f"총 {len(target_tables)}개 테이블 추출 시작: {target_tables}\n")
@@ -46,26 +44,42 @@ for table_name in target_tables:
 
     query = f"SELECT * FROM `{table_name}`"
     writer = None
+    fixed_schema = None
     total_rows = 0
 
     try:
-        for chunk in pd.read_sql(query, engine, chunksize=CHUNK_SIZE):
-            table = pa.Table.from_pandas(chunk)
+        # dtype_backend="pyarrow"를 적용하여 NULL 포함 정수 컬럼 등이 멋대로 float으로 바뀌는 현상 방지
+        for chunk in pd.read_sql(query, engine, chunksize=CHUNK_SIZE, dtype_backend="pyarrow"):
+            # index 컬럼 메타데이터 제외 (스키마 불일치 방지)
+            table = pa.Table.from_pandas(chunk, preserve_index=False)
+            
+            # 첫 번째 청크에서 생성한 스키마를 고정
             if writer is None:
-                writer = pq.ParquetWriter(output_file, table.schema, compression="snappy")
+                fixed_schema = table.schema
+                writer = pq.ParquetWriter(output_file, fixed_schema, compression="snappy")
+            else:
+                # 2번째 청크부터 타입 차이가 있더라도 초기 스키마로 강제 형변환(Cast)
+                table = table.cast(fixed_schema)
+
             writer.write_table(table)
             total_rows += len(chunk)
 
         # 데이터가 0건인 빈 테이블 대응
         if writer is None:
-            empty_df = pd.read_sql(f"SELECT * FROM `{table_name}` LIMIT 0", engine)
-            table = pa.Table.from_pandas(empty_df)
+            empty_df = pd.read_sql(f"SELECT * FROM `{table_name}` LIMIT 0", engine, dtype_backend="pyarrow")
+            table = pa.Table.from_pandas(empty_df, preserve_index=False)
             pq.write_table(table, output_file, compression="snappy")
 
         print(f"✔ [{table_name}] 완료 -> {output_file} (총 {total_rows:,} 행)")
 
     except Exception as e:
         print(f"✖ [{table_name}] 추출 실패: {e}")
+        # 실패 시 깨진 불완전 파일 정리
+        if os.path.exists(output_file):
+            try:
+                os.remove(output_file)
+            except OSError:
+                pass
 
     finally:
         if writer:
