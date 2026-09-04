@@ -1,0 +1,1 @@
+SELECT * FROM `sns-analysis-prj.sns_analysis.test`윳
