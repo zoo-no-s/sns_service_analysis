@@ -1,0 +1,55 @@
+version: 2
+
+models:
+  - name: mart_user_weekly_analysis
+    description: >
+      기준 주차의 유저 이용 행동과 관계 특성이 다음 주 재방문과
+      어떤 관계가 있는지 분석하기 위한 유저×주차 단위 데이터 마트입니다.
+      한 행은 유저 1명과 기준 주차 1개를 의미합니다.
+
+    columns:
+      - name: user_id
+        description: Hackle 로그에서 식별한 유저 ID
+        tests:
+          - not_null
+
+      - name: week_start
+        description: 기준 행동을 집계한 주차의 시작일
+        tests:
+          - not_null
+
+      - name: active_days
+        description: 기준 주차에 유저가 활동한 고유 일수
+
+      - name: session_count
+        description: 기준 주차에 발생한 세션 수
+
+      - name: friend_count
+        description: >
+          수락된 친구 요청을 양방향 관계로 변환한 후 계산한
+          유저별 고유 친구 수
+
+      - name: votes_given
+        description: 기준 주차에 유저가 보낸 투표 수
+
+      - name: votes_received
+        description: 기준 주차에 유저가 받은 투표 수
+
+      - name: received_concentration
+        description: >
+          받은 투표가 특정 상대에게 집중된 정도입니다.
+          받은 투표가 0건이면 계산할 수 없어 NULL입니다.
+
+      - name: is_retention_eligible
+        description: >
+          다음 주 전체 기간을 관찰할 수 있으면 1,
+          관찰 기간이 부족하면 0
+        tests:
+          - accepted_values:
+              arguments:
+                values: [0, 1]
+
+      - name: next_week_retained
+        description: >
+          다음 주에 1회 이상 활동하면 1, 활동하지 않으면 0입니다.
+          다음 주 전체 기간을 관찰할 수 없는 행은 NULL입니다.
