@@ -1,0 +1,21 @@
+version: 2
+
+sources:
+  - name: sns_analysis
+    database: sns-analysis-prj
+    schema: sns_analysis
+
+    tables:
+      - name: accounts_user
+      - name: polls_questionset
+      - name: accounts_userquestionrecord
+      - name: accounts_paymenthistory
+      - name: accounts_school
+      - name: accounts_nearbyschool
+      - name: accounts_group
+      - name: accounts_friendrequest
+      - name: accounts_blockrecord
+      - name: accounts_attendance
+      - name: accounts_timelinereport
+      - name: hackle_properties
+      - name: hackle_events
