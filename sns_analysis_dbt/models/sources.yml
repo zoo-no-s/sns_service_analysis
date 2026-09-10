@@ -1,7 +1,7 @@
 version: 2
 
 sources:
-  - name: sns_analysis
+  - name: raw_accounts
     database: sns-analysis-prj
     schema: sns_analysis
 

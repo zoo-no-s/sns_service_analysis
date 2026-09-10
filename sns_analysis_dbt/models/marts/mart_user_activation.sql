@@ -3,9 +3,14 @@
 WITH user_base AS (
 
     SELECT
-        id AS user_id,
-        created_at AS signup_at
-    FROM {{ source('sns_analysis', 'accounts_user') }}
+        u.id AS user_id,
+        u.created_at AS signup_at,
+        u.group_id,
+        g.school_id
+    FROM {{ source('raw_accounts', 'accounts_user') }} u
+
+    LEFT JOIN {{ source('raw_accounts', 'accounts_group') }} g
+        ON u.group_id = g.id
 
 ),
 
@@ -16,7 +21,7 @@ questionset_summary AS (
         COUNT(*) AS questionset_count,
         MIN(opening_time) AS first_questionset_at,
         MAX(opening_time) AS last_questionset_at
-    FROM {{ source('sns_analysis', 'polls_questionset') }}
+    FROM {{ source('raw_accounts', 'polls_questionset') }}
     GROUP BY user_id
 
 ),
@@ -28,7 +33,7 @@ vote_summary AS (
         COUNT(*) AS vote_count,
         MIN(created_at) AS first_vote_at,
         MAX(created_at) AS last_vote_at
-    FROM {{ source('sns_analysis', 'accounts_userquestionrecord') }}
+    FROM {{ source('raw_accounts', 'accounts_userquestionrecord') }}
     GROUP BY user_id
 
 ),
@@ -40,7 +45,7 @@ selected_summary AS (
         COUNT(*) AS selected_count,
         COUNTIF(has_read = 1) AS read_selected_count,
         MIN(created_at) AS first_selected_at
-    FROM {{ source('sns_analysis', 'accounts_userquestionrecord') }}
+    FROM {{ source('raw_accounts', 'accounts_userquestionrecord') }}
     GROUP BY chosen_user_id
 
 ),
@@ -52,7 +57,7 @@ payment_summary AS (
         COUNT(*) AS payment_count,
         MIN(created_at) AS first_payment_at,
         MAX(created_at) AS last_payment_at
-    FROM {{ source('sns_analysis', 'accounts_paymenthistory') }}
+    FROM {{ source('raw_accounts', 'accounts_paymenthistory') }}
     GROUP BY user_id
 
 )
@@ -60,6 +65,8 @@ payment_summary AS (
 SELECT
     u.user_id,
     u.signup_at,
+    u.group_id,
+    u.school_id,
 
     q.questionset_count,
     q.first_questionset_at,
