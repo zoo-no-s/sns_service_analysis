@@ -1,0 +1,191 @@
+version: 2
+
+models:
+  - name: mart_user_daily_state_analysis
+    description: >
+      2차 리텐션 분석을 위한 유저×UTC 날짜 단위 데이터 마트입니다.
+      공통 기간에 식별 가능한 Hackle 활동이 있었던 유저마다
+      2023-07-24부터 2023-08-10까지 18개 날짜 행을 저장합니다.
+      실제 투표는 accounts_userquestionrecord만 사용하며 받은 투표와
+      활성 동급생 수는 유저 행동이 아닌 사회적 노출로 분리합니다.
+
+    columns:
+      - name: user_id
+        description: Hackle 세션에서 숫자형 내부 회원 ID로 하나만 확정된 유저 ID
+        tests:
+          - not_null
+
+      - name: activity_date
+        description: UTC 기준 활동 날짜
+        tests:
+          - not_null
+
+      - name: week_start
+        description: activity_date가 속한 월요일 시작 주차
+
+      - name: analysis_phase
+        description: initial, transition, outcome, supplemental 기간 구분
+        tests:
+          - accepted_values:
+              arguments:
+                values: [initial, transition, outcome, supplemental]
+
+      - name: anchor_cohort_flag
+        description: 2023-07-24부터 2023-07-26까지 한 번 이상 활동했으면 1
+        tests:
+          - accepted_values:
+              arguments:
+                values: [0, 1]
+
+      - name: signup_date
+        description: accounts_user.created_at에서 추출한 UTC 가입일
+
+      - name: user_tenure_days
+        description: activity_date 기준 가입 경과일
+
+      - name: gender
+        description: accounts_user에 저장된 성별
+
+      - name: group_id
+        description: accounts_user에 연결된 학급 ID
+
+      - name: school_id
+        description: accounts_group에 연결된 학교 ID
+
+      - name: grade
+        description: accounts_group에 저장된 학년
+
+      - name: class_num
+        description: accounts_group에 저장된 반 번호
+
+      - name: school_type
+        description: accounts_school에 저장된 중학교 또는 고등학교 구분
+
+      - name: profile_match_flag
+        description: accounts_user 프로필이 연결되면 1
+        tests:
+          - accepted_values:
+              arguments:
+                values: [0, 1]
+
+      - name: activity_flag
+        description: 해당 날짜에 Hackle 이벤트 또는 실제 보낸 투표가 있으면 1
+        tests:
+          - accepted_values:
+              arguments:
+                values: [0, 1]
+
+      - name: core_activity_flag
+        description: 질문, 투표, 받은 질문 확인, 타임라인, 출석 또는 구매 행동이 있으면 1
+        tests:
+          - accepted_values:
+              arguments:
+                values: [0, 1]
+
+      - name: event_count
+        description: 해당 날짜에 연결된 Hackle 이벤트 수
+
+      - name: session_count
+        description: 해당 날짜의 고유 Hackle 세션 수
+
+      - name: launch_app_count
+        description: hackle_events의 launch_app 발생 수
+
+      - name: question_start_count
+        description: click_question_start 발생 수이며 실제 투표 수가 아님
+
+      - name: question_complete_count
+        description: complete_question 발생 수이며 실제 투표 수가 아님
+
+      - name: question_skip_count
+        description: skip_question 발생 수
+
+      - name: received_question_open_count
+        description: click_question_open 발생 수
+
+      - name: question_tab_view_count
+        description: view_lab_tap 발생 수
+
+      - name: timeline_view_count
+        description: view_timeline_tap 발생 수
+
+      - name: attendance_click_count
+        description: click_attendance 발생 수
+
+      - name: purchase_count
+        description: complete_purchase 발생 수
+
+      - name: sent_vote_count
+        description: accounts_userquestionrecord.user_id 기준 실제 보낸 투표 수
+
+      - name: sent_unique_receiver_count
+        description: 해당 날짜에 실제 투표를 보낸 고유 상대 수
+
+      - name: new_receiver_count
+        description: 해당 날짜에 처음으로 투표한 고유 상대 수
+
+      - name: received_vote_count
+        description: accounts_userquestionrecord.chosen_user_id 기준 실제 받은 투표 수
+
+      - name: received_unique_voter_count
+        description: 해당 날짜에 나에게 투표한 고유 유저 수
+
+      - name: new_voter_count
+        description: 해당 날짜에 처음으로 나에게 투표한 고유 유저 수
+
+      - name: received_vote_concentration
+        description: 최다 투표자의 투표 수를 전체 받은 투표 수로 나눈 값이며 수신이 없으면 NULL
+
+      - name: reciprocal_partner_count_to_date
+        description: 해당 날짜까지 서로 투표한 고유 상대 수
+
+      - name: last_received_vote_date
+        description: 해당 날짜까지 가장 최근에 실제 투표를 받은 UTC 날짜
+
+      - name: days_since_last_received_vote
+        description: 최근 실제 투표 수신 후 경과일이며 수신 이력이 없으면 NULL
+
+      - name: question_entry_flag
+        description: question_start_count가 1 이상이면 1
+
+      - name: actual_vote_flag
+        description: sent_vote_count가 1 이상이면 1
+
+      - name: question_entry_no_vote_flag
+        description: 질문 진입은 있지만 같은 날짜 실제 보낸 투표가 없으면 1
+
+      - name: reward_open_flag
+        description: 받은 질문을 열어본 행동이 있으면 1
+
+      - name: received_vote_flag
+        description: 다른 유저에게 실제 투표를 받았으면 1인 사회적 노출 지표
+
+      - name: attendance_flag
+        description: 출석 클릭이 있으면 1
+
+      - name: class_activity_available_flag
+        description: group_id가 연결되어 학급 활성도를 계산할 수 있으면 1
+        tests:
+          - accepted_values:
+              arguments:
+                values: [0, 1]
+
+      - name: user_behavior_state
+        description: reward_opened, actual_vote, question_entry_no_vote, view_centric, other_active, inactive 중 대표 상태
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - reward_opened
+                  - actual_vote
+                  - question_entry_no_vote
+                  - view_centric
+                  - other_active
+                  - inactive
+
+      - name: class_active_user_count
+        description: 해당 날짜에 같은 학급에서 활동한 전체 대상 유저 수
+
+      - name: active_classmates_daily
+        description: class_active_user_count에서 본인의 활동 여부를 제외한 활성 동급생 수이며 학급 미연결 시 NULL
